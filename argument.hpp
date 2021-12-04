@@ -1,26 +1,27 @@
 #pragma once
 
 //Native C++ Libraries
+#include <string>
 #include <string_view>
 #include <vector>
 
-//Class 'Argument' represents a commandline argument
-class Argument final
+namespace arg_parser
 {
-    bool required;
-}
-
-
-//
-struct Properties final 
-{
-    //Data members
-    std::vector<std::string_view> params;      //List of the parameters (view of the strings in char* argv[])
-    bool set;                                 //Whether or not the argument was used in the cmd args
-
-    //Constructor
-    ArgumentProperties()
+    //Class 'Argument' represents a commandline argument and its properties
+    struct Argument final 
     {
-        set = false;
-    }
-};
+        //Data members
+        std::string name;                             //The name (identifier) of the argument
+        bool required;                               //Whether or not the argument is required
+        bool set;                                   //Whether or not the argument was used in the cmd args
+        std::vector<std::string_view> params;      //List of the parameters (view of the strings in char* argv[])
+
+        //Constructor (default + parameterized)
+        Argument(std::string in_name = "", bool in_required = false)
+        {
+            name = in_name;
+            required = in_required;
+            set = false;
+        }
+    };
+}

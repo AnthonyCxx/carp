@@ -5,11 +5,12 @@
 #include <string>
 #include <string_view>
 #include <unordered_map>
+#include <regex>
 
 //Custom Header files
 #include "argument.hpp"
 
-class Parser
+class Parser final
 {
     private:
         //A map of all the commandline arguments, mapped to their values
@@ -17,44 +18,42 @@ class Parser
 
     public:
         template <typename ...Args>
-        Argument(Args&&...)
-        
+        Parser(Args&&...);
 
         void parse(int, char*[]);
-        [[nodiscard]] const Argument& operator[](std::string) const;
+        [[nodiscard]] const Argument& operator[](const std::string&) const;
 
         // *** TEMP: DEBUGGING *** //
-        void printMap() const;
+        void print_map() const;
 };
 
 
 
 // ***** FUNCTION IMPLEMENTATION ***** //
-
-//Constructor
 template <typename ...Args>
-Argument::Argument(Args&&... args)
+Parser::Parser(Args&&... args)
 {
-    
+    //Insert all the arguments into the map
+    (arg_map.insert({args.name, args}), ...);
 }
-
 
 //Parse the commandline arguments (toggle proper values in the map)
 void Parser::parse(int argc, char* argv[])
 {
-    //for(std::size_t i=0; i < argc; i;
+    //Regex for commandline arguments: matches with any alphabetic string that starts with '-' or '--' (also allows -'s)
+    const static std::regex arg_pattern(R"((-|--)[a-zA-Z\-]+)");
 }
 
 
 //Return an argument object
-const Argument& Parser::operator[](const std::string& arg) const
+[[nodiscard]] const Argument& Parser::operator[](const std::string& arg) const
 {
     //Return the Argument object associated with the string -- CAN THROW std::out_of_range
     return arg_map.at(arg);
 }
 
 
-void Parser::printMap() const
+void Parser::print_map() const
 {
     for(const auto& map_entry : arg_map)
     {

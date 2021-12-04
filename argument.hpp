@@ -6,8 +6,9 @@
 
 
 //Class 'Argument' represents a commandline argument and its parameters
-struct Argument
+struct Argument final 
 {
-    bool set;
+    std::string_view name; 
     std::vector<std::string_view> params;
+    bool set;
 };

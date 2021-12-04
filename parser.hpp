@@ -1,12 +1,13 @@
 #pragma once
 
 //Native C++ Libraries
-#include <iostream>
-#include <string>
-#include <string_view>
-#include <unordered_map>
-#include <regex>
-#include <type_traits>
+#include <iostream>               //I/O operations
+#include <string>                //Representing commandline arguments
+#include <string_view>          //Passing/viewing arguments without allocating new resources
+#include <unordered_map>       //For querying arguments
+#include <regex>              //Regular expressions for matching commandline arguments
+#include <type_traits>       //std::is_same_v
+#include <stdexcept>        //std::invalid_argument
 
 //Custom Header files
 #include "argument.hpp"
@@ -52,7 +53,9 @@ namespace arg_parser
         //Regex for commandline arguments: matches with any alphabetic string that starts with '-' or '--' (also allows hyphens)
         const static std::regex arg_pattern(R"((-|--)[a-zA-Z\-]+)");
         std::string current_arg;
+        std::string error_list;
 
+        //Process all the arguments
         for(int i=1; i < argc; ++i)   //safe to use 'int' over 'std::size_t' because max is INT_MAX
         {
             if (std::regex_match(argv[i], arg_pattern) and arg_map.find(argv[i]) != arg_map.end())  //second condition prevents injection of new args
@@ -66,6 +69,18 @@ namespace arg_parser
                     arg_map[current_arg].params.push_back(argv[i]);
             }
         }
+
+
+        //Ensure all required arguments were provided
+        std::for_each(arg_map.cbegin(), arg_map.cend(), [&error_list](auto argument) 
+                                                        { 
+                                                            if (argument.second.required and not argument.second.set) 
+                                                                error_list += argument.second.name + ", ";
+                                                        });
+
+        
+        if (error_list.length() != 0)  //if (error_list.length())
+         throw std::invalid_argument("Fatal error, required arguments not included: " + error_list);
     }
 
 

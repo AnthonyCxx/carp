@@ -6,9 +6,11 @@
 #include <string_view>
 #include <unordered_map>
 #include <regex>
+#include <type_traits>
 
 //Custom Header files
 #include "argument.hpp"
+#include "properties.hpp"
 
 class Parser final
 {
@@ -30,9 +32,14 @@ class Parser final
 
 
 // ***** FUNCTION IMPLEMENTATION ***** //
+
+//Constructor
 template <typename ...Args>
 Parser::Parser(Args&&... args)
 {
+    //Make sure all the arguments are 'Argument' objects (if using C++20, change this to a 'requires' clause)
+    static_assert((std::is_same_v<Args&&, Argument> && ...), "whoops, not all the arguments were \'Argument\' options");
+
     //Insert all the arguments into the map
     (arg_map.insert({args.name, args}), ...);
 }

@@ -8,7 +8,8 @@ features for a parser:
 3. Including descriptions of each argument.
 
 <br /> <br />
-Here is a short example of how to use the parser:
+Here is a short example of how to use the parser.  Note, the `Parser.validate_args()` method is not automatically called by the parser's constructor to allow the
+programmer to intervene, allowing them to create help screens and other internal logic.
 ```C++
 //Commandline argument parser + argument list
 arg_parser::Parser parser(
@@ -30,5 +31,3 @@ if (not parser["--hashfile"].is_set())
     exit(1);
 }
 ```
-> Note, the `Parser.validate_args()` method is not automatically called by the parser's constructor to allow the programmer to intervene, allowing them to create help screens
-> and other logic.

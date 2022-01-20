@@ -7,6 +7,7 @@ features for a parser:
 2. Enforcing a minimum number of arguments
 3. Including descriptions of each argument.
 
+<br /> <br />
 Here is a short example of how to use the parser:
 ```C++
 //Commandline argument parser + argument list

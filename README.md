@@ -24,6 +24,9 @@ arg_parser::Parser parser(
 //Parse the commandline arguments
 parser.parse(argc, argv);
 
+//Exit program if required arguments or parameters not included [status_code=1] 
+parser.validate_args();
+
 //Example usage
 if (not parser["--hashfile"].is_set())
 {

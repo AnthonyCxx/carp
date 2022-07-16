@@ -1,5 +1,5 @@
 #ifndef CARP_DEBUG
-    #error Can\'t run tests without the "CARP_DEBUG" flag.
+    #error Cannot run tests without the "CARP_DEBUG" flag.
 #endif
 
 #include "parser-tests.hh"
@@ -9,8 +9,8 @@
 //why is c/c++'s infrastructure so bad
 int main()
 {
-    ArgumentTests::driver();
-    ParserTests::driver();
+    tests::ArgumentTests::driver();
+    tests::ParserTests::driver();
     std::cout << "All tests passed successfully!\n";
 
     return 0;

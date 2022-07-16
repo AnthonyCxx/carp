@@ -5,7 +5,6 @@
 #include <string>
 #include <string_view>
 #include <memory>
-#include <unordered_set>
 #include <unordered_map>
 #include <regex>
 #include <type_traits>
@@ -18,19 +17,19 @@ namespace carp
     class Parser final
     {
         public:
-            std::unordered_map<std::string, std::shared_ptr<CmdArg>> arguments;
-
-        public:
             template <typename ...Args>
             Parser(Args...);
 
             void parse(int, char*[]);
-            const std::shared_ptr<CmdArg> get_arg(std::string) const;
+            const std::shared_ptr<CmdArg> get_arg(std::string) const;  //TODO: change to 'std::shared_ptr<const CmdArg>' (const in wrong spot)
             void help() const;
 
             #ifdef CARP_DEBUG
-                void print_all_arguments() const;
+            void print_all_arguments() const;
             #endif
+
+        private:
+            std::unordered_map<std::string, std::shared_ptr<CmdArg>> arguments;
     };
 
     template <typename ...Args>
@@ -63,6 +62,9 @@ namespace carp
             std::string str = argv[i];
             if (std::regex_match(str, arg_pattern) and arguments.find(str) != arguments.end())
             {
+                if (str == "--help" || str == "-h")
+                    help();
+
                 arguments[str]->set = true;
             }
         }
@@ -75,25 +77,24 @@ namespace carp
 
     void Parser::help() const
     {
-        std::unordered_set<std::string> seen;
-        for(const auto& [_, cmdarg] : arguments)
+
+        for(const auto& [name, cmdarg] : arguments)
         {
-            if (seen.find(cmdarg->identifier) == seen.end())
+            if (name[0] != '-') //if a raw identifier, not a long/short_name
             {
                 std::cout << cmdarg->summary() << '\n';
-                seen.insert(cmdarg->identifier);
             }
         }
+        exit(1);
     }
 
     #ifdef CARP_DEBUG
         void Parser::print_all_arguments() const
         {
             std::cout << std::boolalpha;
-            std::unordered_set<std::string> seen;
-            for(const auto& [_, cmdarg] : arguments)
+            for(const auto& [name, cmdarg] : arguments)
             {
-                if (seen.find(cmdarg->identifier) == seen.end())
+                if (name[0] != '-') //if a raw identifier, not a long/short_name
                 {
                     std::cout << "Identifier: " << cmdarg->identifier << '\n'
                               << "Long name: " << cmdarg->long_name << '\n'
@@ -101,8 +102,6 @@ namespace carp
                               << "Description: " << cmdarg->description << '\n'
                               << "Required?: " << cmdarg->enforced << '\n'
                               << "Set?: " << cmdarg->set << "\n\n";
-
-                    seen.insert(cmdarg->identifier);
                 }
             }
         }

@@ -1,10 +1,29 @@
 #pragma once
 
-#include <string>
 #include <memory>
+#include <vector>
+#include <string>
+#include <string_view>
+
+#ifdef CARP_DEBUG
+namespace tests
+{
+    class ParserTests;
+    class ArgumentTests;
+}
+#endif
 
 namespace carp
 {
+    enum class ArgAction
+    {
+        Store,
+        Append,
+        Count,
+        SetTrue,
+        SetFalse
+    };
+
     class CmdArg
     {
         public:
@@ -21,11 +40,18 @@ namespace carp
 
             friend class Parser;
 
-        public:
+            #ifdef CARP_DEBUG
+            friend class tests::ParserTests;
+            friend class tests::ArgumentTests;
+            #endif
+
+        private:
             std::string identifier;
             std::string long_name;
             std::string short_name;
             std::string description;
+            ArgAction action;
+            std::vector<std::string_view> values;
             bool enforced;
             bool set;
     };
@@ -35,6 +61,7 @@ namespace carp
         identifier = id;
         long_name = "--" + id;
         short_name = "-" + id;
+        action = ArgAction::SetTrue;
         enforced = false;
         set = false;
     }

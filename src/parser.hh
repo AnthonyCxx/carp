@@ -56,16 +56,51 @@ namespace carp
         //NOTE: the simpler regex "^(-|--)[a-zA-Z-]+$" causes the corner case
         // of '--' to be recognized as a valid commandline argument.
         const static std::regex arg_pattern(R"(^(-|--)[a-zA-Z]+[a-zA-Z-]*$)");
+        std::shared_ptr<CmdArg> arg = nullptr;  
 
         for(int i=1; i < argc; ++i)
         {
-            std::string str = argv[i];
-            if (std::regex_match(str, arg_pattern) and arguments.find(str) != arguments.end())
-            {
-                if (str == "--help" || str == "-h")
-                    help();
+            std::string cmdarg = argv[i];
 
-                arguments[str]->set = true;
+            if (std::regex_match(cmdarg, arg_pattern) and arguments.find(cmdarg) != arguments.end())
+            {
+                arg = arguments.at(cmdarg);
+                arg->set = true;
+
+                switch (arg->on_encounter)
+                {
+                    case ArgAction::SetTrue:
+                        arg->values[0] = "true";
+                        break;
+
+                    case ArgAction::SetFalse:
+                        arg->values[0] = "false";
+                        break;
+
+                    case ArgAction::Count:
+                        arg->count++;
+                        break;
+                }
+            }
+            else if (arg != nullptr)
+            {
+                switch (arg->on_encounter)
+                {
+                    case ArgAction::StoreSingle:
+                        arg->values[0] = cmdarg;
+                        break;
+
+                    case ArgAction::StoreMany:
+                        if (arg->values.size() > 0 && not arg->values[0].empty()) //TODO: refactor this mess
+                        {
+                            arg->values.push_back(cmdarg);
+                        }
+                        else
+                        {
+                            arg->values[0] = cmdarg;
+                        }
+                        break;
+                }
             }
         }
     }

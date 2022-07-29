@@ -7,10 +7,29 @@
 #include <functional>
 #include <chrono>
 
+//TEMP
+#include <numeric>
+#include <iterator>
+
 #define stringify(x) #x
 
+template <typename T>
+bool are_equal_vectors(std::vector<T> v1, std::vector<T> v2)
+{
+    if (v1.size() != v2.size())
+        return false;
+
+    for(int i=0; i < v1.size(); ++i)
+    {
+        if (v1[i] != v2[i])
+            return false;
+    }
+
+    return true;
+}
+
 template <typename Function, typename... Args>
-void test(const char* file, const char* function_name, Function&& func, Args&&... args)
+void test(const char* file, const char* function_name, const Function& func, Args&&... args)
 {
     using fpms = std::chrono::duration<double, std::milli>;
     std::cout << std::fixed << std::setprecision(4);    

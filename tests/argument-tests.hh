@@ -5,7 +5,7 @@
 #include <memory>
 #include <cassert>
 
-#include "test-wrapper.hh"
+#include "test-utils.hh"
 #include "../src/argument.hh"
 
 namespace tests 
@@ -17,10 +17,14 @@ namespace tests
         {
             std::shared_ptr<carp::CmdArg> arg = carp::CmdArg("default")
                                                         .build();
+            assert(arg->identifier == "default");
             assert(arg->long_name == "--default");
             assert(arg->short_name == "-default");
             assert(arg->enforced == false);
             assert(arg->set == false);
+            assert(arg->on_encounter = carp::ArgAction::SetTrue);
+            assert(arg->values.size() == 1);
+            assert(arg->count == 0);
         }
 
         static void parameterized_constructor()

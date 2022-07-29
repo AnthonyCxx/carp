@@ -6,3 +6,5 @@ features for a parser:
 
 # Planned Features
 - Special handling for '--help'
+- Parsing collected arguments
+- Remove all uses of exceptions (via nullptr and std::optional)

@@ -17,11 +17,11 @@ namespace carp
 {
     enum class ArgAction
     {
-        Store,
-        Append,
-        Count,
+        StoreSingle,
+        StoreMany,
         SetTrue,
-        SetFalse
+        SetFalse,
+        Count
     };
 
     class CmdArg
@@ -33,6 +33,7 @@ namespace carp
             CmdArg& abbreviation(std::string);
             CmdArg& help(std::string);
             CmdArg& required(bool);
+            CmdArg& action(ArgAction);
             std::shared_ptr<CmdArg> build();
         
             bool is_set() const;
@@ -50,10 +51,12 @@ namespace carp
             std::string long_name;
             std::string short_name;
             std::string description;
-            ArgAction action;
-            std::vector<std::string_view> values;
             bool enforced;
             bool set;
+
+            ArgAction on_encounter;
+            std::vector<std::string> values;
+            unsigned int count;
     };
 
     CmdArg::CmdArg(std::string id = "")
@@ -61,9 +64,11 @@ namespace carp
         identifier = id;
         long_name = "--" + id;
         short_name = "-" + id;
-        action = ArgAction::SetTrue;
         enforced = false;
         set = false;
+        on_encounter = ArgAction::SetTrue;
+        values = std::vector<std::string>(1);
+        count = 0;
     }
 
     CmdArg& CmdArg::name(std::string name)
@@ -87,6 +92,12 @@ namespace carp
     CmdArg& CmdArg::required(bool required)
     {
         enforced = required;
+        return *this;
+    }
+
+    CmdArg& CmdArg::action(ArgAction action)
+    {
+        on_encounter = action;
         return *this;
     }
 

@@ -231,6 +231,89 @@ namespace tests {
             assert(parser.get_arg("count-me")->count == 2);
         }
 
+        static void parse_number()
+        {
+            carp::Parser parser(
+                carp::CmdArg("attempts")
+                        .abbreviation("a")
+                        .action(carp::ArgAction::StoreSingle)
+                        .build(),
+
+                carp::CmdArg("timeout")
+                        .abbreviation("t")
+                        .action(carp::ArgAction::StoreSingle)
+                        .build(),
+
+                carp::CmdArg("octal")
+                        .abbreviation("oct")
+                        .action(carp::ArgAction::StoreSingle)
+                        .build(),
+
+                carp::CmdArg("hexadecimal")
+                        .abbreviation("hex")
+                        .action(carp::ArgAction::StoreSingle)
+                        .build()
+            );
+
+            char* argv[] { "program_name", "--attempts", "5", "--timeout", "30",
+                                           "--octal", "140", "--hexadecimal", "F8" };
+            int argc = 9;
+
+            parser.parse(argc, argv);
+            
+            //Primitive types
+            assert(parser.get_arg("attempts")->try_parse_number<int>().value() == 5);
+            assert(parser.get_arg("timeout")->try_parse_number<int>().value() == 30);
+
+            //Different bases
+            assert(parser.get_arg("octal")->try_parse_number<int>(8).value() == 96);
+            assert(parser.get_arg("hexadecimal")->try_parse_number<int>(16).value() == 248);
+        }
+
+        static void parse_bool()
+        {
+            carp::Parser parser(
+                carp::CmdArg("flag")
+                        .abbreviation("f")
+                        .action(carp::ArgAction::Count)
+                        .build(),
+
+                carp::CmdArg("count-me")
+                        .abbreviation("c")
+                        .action(carp::ArgAction::Count)
+                        .build()
+            );
+
+            char* argv[] { "program_name", "--flag", "-f", "--flag", "--count-me", "-c", "--flag" };
+            int argc = 7;
+
+            parser.parse(argc, argv);
+            assert(parser.get_arg("flag")->count == 4);
+            assert(parser.get_arg("count-me")->count == 2);
+        }
+
+        static void parse_user_defined()
+        {
+            carp::Parser parser(
+                carp::CmdArg("flag")
+                        .abbreviation("f")
+                        .action(carp::ArgAction::Count)
+                        .build(),
+
+                carp::CmdArg("count-me")
+                        .abbreviation("c")
+                        .action(carp::ArgAction::Count)
+                        .build()
+            );
+
+            char* argv[] { "program_name", "--flag", "-f", "--flag", "--count-me", "-c", "--flag" };
+            int argc = 7;
+
+            parser.parse(argc, argv);
+            assert(parser.get_arg("flag")->count == 4);
+            assert(parser.get_arg("count-me")->count == 2);
+        }
+
         static void driver() 
         {
             test(__FILE__, stringify(default_constructor), default_constructor);
@@ -238,11 +321,17 @@ namespace tests {
             test(__FILE__, stringify(cmdarg_regex), cmdarg_regex);
             test(__FILE__, stringify(get_cmdarg), get_cmdarg);
             test(__FILE__, stringify(parse_flags), parse_flags);
+
             test(__FILE__, stringify(action_set_true), action_set_true);
             test(__FILE__, stringify(action_set_false), action_set_false);
             test(__FILE__, stringify(action_store_single), action_store_single);
             test(__FILE__, stringify(action_store_many), action_store_many);
             test(__FILE__, stringify(action_count), action_count);
+
+            test(__FILE__, stringify(parse_number), parse_number);
+            test(__FILE__, stringify(parse_bool), parse_bool);
+            test(__FILE__, stringify(parse_user_defined), parse_user_defined);
+            
             //test(__FILE__, stringify(help), help);
             std::cout << '\n';
         }

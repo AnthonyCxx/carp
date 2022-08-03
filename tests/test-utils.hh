@@ -6,10 +6,8 @@
 #include <iomanip>
 #include <functional>
 #include <chrono>
-
-//TEMP
-#include <numeric>
-#include <iterator>
+#include <type_traits>
+#include <exception>
 
 #define stringify(x) #x
 
@@ -37,10 +35,45 @@ void test(const char* file, const char* function_name, const Function& func, Arg
     std::cout << '[' << file << "] " << function_name << "...";
     auto start = std::chrono::high_resolution_clock::now();
 
-    std::invoke(std::forward<Function>(func), std::forward<Args>(args)...);
+    func(std::forward<Args>(args)...);
 
     double elapsed_time = std::chrono::duration_cast<fpms>(std::chrono::high_resolution_clock::now() - start).count();
     std::cout << "SUCCESS (" << elapsed_time << "ms)\n";
+}
+
+template <typename Function, typename... Args>
+bool throws_exception(const Function& func, Args&&... args)
+{
+    try
+    {
+        func(std::forward<Args>(args)...);
+    }
+    catch(...)
+    {
+        return true;
+    }
+
+    return false;
+}
+
+template <typename Function, typename... Args, typename Exception, 
+typename = std::enable_if_t<std::is_base_of_v<std::exception, Exception>>>
+bool throws_exception(const Function& func, Args&&... args)
+{
+    try
+    {
+        func(std::forward<Args>(args)...);
+    }
+    catch(Exception)
+    {
+        return true;
+    }
+    catch(...)
+    {
+        return false;
+    }
+
+    return false;
 }
 
 #endif

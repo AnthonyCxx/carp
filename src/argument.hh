@@ -4,6 +4,10 @@
 #include <vector>
 #include <string>
 #include <string_view>
+#include <optional>
+#include <charconv>
+#include <functional>
+#include <system_error>
 
 #ifdef CARP_DEBUG
 namespace tests
@@ -35,7 +39,15 @@ namespace carp
             CmdArg& required(bool);
             CmdArg& action(ArgAction);
             std::shared_ptr<CmdArg> build();
-        
+
+            template <typename T>
+            std::optional<T> try_parse_number(int radix = 10) const;
+
+            std::optional<bool> try_parse_bool() const;
+
+            template <typename R, typename... Args>
+            std::optional<R> try_parse_user_defined(const std::function<bool(R,Args...)>&, Args&&... args) const;
+
             bool is_set() const;
             std::string summary() const;
 
@@ -104,6 +116,50 @@ namespace carp
     std::shared_ptr<CmdArg> CmdArg::build()
     {
         return std::make_shared<CmdArg>(*this);
+    }
+
+    template <typename T>
+    std::optional<T> CmdArg::try_parse_number(int radix) const
+    {
+        T value;
+        std::from_chars_result parse_result = std::from_chars(values[0].data(), values[0].data() + values[0].size(), /*out*/ value, radix);
+
+        if (parse_result.ec == std::errc{})
+            return value;
+
+        return std::nullopt;
+    }
+
+    std::optional<bool> CmdArg::try_parse_bool() const
+    {
+        const static auto case_insensitive_char_comp = [](unsigned char a, unsigned char b) -> bool {return tolower(a) == tolower(b);};
+        const static auto case_insensitive_str_comp = [](std::string_view a, std::string_view b) -> bool 
+        {
+            return a.length() == b.length() and std::equal(a.begin(), a.end(), b.begin(), case_insensitive_char_comp);
+        };
+
+        if (case_insensitive_str_comp(values[0], "true"))
+            return true;
+
+        if (case_insensitive_str_comp(values[0], "false"))
+            return false;
+
+        return std::nullopt;
+    }
+
+    template <typename R, typename... Args>
+    std::optional<R> CmdArg::try_parse_user_defined(const std::function<bool(R,Args...)>& parser_func, Args&&... args) const
+    {
+        try
+        {
+            R parsed_value;
+            if (parser_func(/*out*/ parsed_value, std::forward<Args>(args)...))
+                return parsed_value;
+        }
+        catch (...)
+        {
+            return std::nullopt;
+        }
     }
 
     bool CmdArg::is_set() const

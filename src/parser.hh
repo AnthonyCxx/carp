@@ -9,6 +9,7 @@
 #include <regex>
 #include <type_traits>
 #include <cstdlib>
+#include <stdexcept>
 
 #include "argument.hh"
 
@@ -21,6 +22,7 @@ namespace carp
             Parser(Args...);
 
             void parse(int, char*[]);
+            void validate_required_args() const;
             const std::shared_ptr<CmdArg> get_arg(std::string) const;  //TODO: change to 'std::shared_ptr<const CmdArg>' (const in wrong spot)
             void help() const;
 
@@ -67,7 +69,7 @@ namespace carp
                 arg = arguments.at(cmdarg);
                 arg->set = true;
 
-                switch (arg->on_encounter)
+                switch (arg->on_parse)
                 {
                     case ArgAction::SetTrue:
                         arg->values[0] = "true";
@@ -84,14 +86,14 @@ namespace carp
             }
             else if (arg != nullptr)
             {
-                switch (arg->on_encounter)
+                switch (arg->on_parse)
                 {
                     case ArgAction::StoreSingle:
                         arg->values[0] = cmdarg;
                         break;
 
                     case ArgAction::StoreMany:
-                        if (arg->values.size() > 0 && not arg->values[0].empty()) //TODO: refactor this mess
+                        if (arg->values.size() > 0 and not arg->values[0].empty()) //TODO: refactor this mess
                         {
                             arg->values.push_back(cmdarg);
                         }
@@ -102,6 +104,32 @@ namespace carp
                         break;
                 }
             }
+        }
+
+        validate_required_args();
+    }
+
+    void Parser::validate_required_args() const
+    {
+        std::string argument_errors;
+
+        for(const auto& [identifier, cmdarg] : arguments)
+        {
+            if (identifier[0] != '-')
+            {
+                if (cmdarg->enforced and not cmdarg->set)
+                {
+                    if (not argument_errors.empty())
+                        argument_errors += ", ";
+
+                    argument_errors += cmdarg->long_name + " (" + cmdarg->short_name + ")";
+                }
+            }
+        }
+
+        if (not argument_errors.empty())
+        {
+            throw std::runtime_error("the following required arguments were not provided: " + argument_errors);
         }
     }
 

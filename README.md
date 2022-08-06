@@ -5,6 +5,8 @@ supports querying the parameters of and argument. Being light-weight, the parser
 features for a parser: 
 
 # Planned Features
-- Special handling for '--help'
+- Special handling for '--help' + helpful error messages on improper arguments supplied
 - Parsing collected arguments
-- Remove all uses of exceptions (via nullptr and std::optional)
+- Remove exceptions where possible (via nullptr and std::optional)
+- Update 'ArgAction' to SingleValue, ManyValue, Flag, and Count.
+- Add support for try_parse_user_defined. Problem: user does not have access to CmdArg::values, which are needed for custom parsing.

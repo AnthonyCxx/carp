@@ -8,22 +8,16 @@
 #include <chrono>
 #include <type_traits>
 #include <exception>
+#include <cmath>
+#include <limits>
+#include <algorithm>
 
-#define stringify(x) #x
+#define stringify(a) #a
 
 template <typename T>
 bool are_equal_vectors(std::vector<T> v1, std::vector<T> v2)
 {
-    if (v1.size() != v2.size())
-        return false;
-
-    for(int i=0; i < v1.size(); ++i)
-    {
-        if (v1[i] != v2[i])
-            return false;
-    }
-
-    return true;
+    return v1.size() == v2.size() and std::equal(v1.begin(), v1.end(), v2.begin(), [](T a, T b) {return a == b;});
 }
 
 template <typename Function, typename... Args>
@@ -74,6 +68,50 @@ bool throws_exception(const Function& func, Args&&... args)
     }
 
     return false;
+}
+
+template <typename Class, typename Function, typename... Args>
+bool member_throws_exception(Class& object, const Function& member_func, Args&&... args)
+{
+    try
+    {
+        (object.*member_func)(std::forward<Args>(args)...);
+    }
+    catch(...)
+    {
+        return true;
+    }
+
+    return false;
+}
+
+template <typename Exception, typename Class, typename Function, typename... Args, 
+typename = std::enable_if_t<std::is_base_of_v<std::exception, Exception>>>
+bool member_throws_exception(Class& object, const Function& member_func, Args&&... args)
+{
+    try
+    {
+        (object.*member_func)(std::forward<Args>(args)...);
+    }
+    catch(Exception)
+    {
+        return true;
+    }
+    catch(...)
+    {
+        return false;
+    }
+
+    return false;
+}
+
+//The following code comes directly from the C++ documentation: https://en.cppreference.com/w/cpp/types/numeric_limits/epsilon
+template<class T,
+typename std::enable_if_t<std::is_floating_point_v<T>>>
+bool almost_equal(T a, T b)
+{
+    return std::fabs(a-b) <= std::numeric_limits<T>::epsilon() * std::fabs(a+b) 
+    || std::fabs(a-b) < std::numeric_limits<T>::min();
 }
 
 #endif

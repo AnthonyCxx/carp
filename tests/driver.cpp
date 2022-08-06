@@ -5,7 +5,7 @@
 #include "parser-tests.hh"
 #include "argument-tests.hh"
 
-//oh my god unit tests without a framework is hell
+//oh my god unit tests without a framework is so bad
 //why is c/c++'s infrastructure so bad
 int main()
 {

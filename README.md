@@ -9,6 +9,5 @@ features for a parser:
 - Parsing collected arguments
 - Remove exceptions where possible (via nullptr and std::optional)
 - Update 'ArgAction' to SingleValue, ManyValue, Flag, and Count.
-- Add support for try_parse_user_defined. Problem: user does not have access to CmdArg::values, which are needed for custom parsing.
 
 - Make sure the parser complies with [POSIX Utility Conventions](https://pubs.opengroup.org/onlinepubs/9699919799/basedefs/V1_chap12.html)

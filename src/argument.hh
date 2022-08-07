@@ -194,7 +194,7 @@ namespace carp
         This callback function allows users to parse a CmdArg's values as any struct, class, enum, etc using 
         their own function. The function provided must be of the same format as std::from_chars, i.e.:
         1. The function must return bool (true if parsing succeeded, false is failed)
-        2. The second parameter should be of type `const std::vector<std::string>&`, which will give the parsing function
+        2. The first parameter should be of type `const std::vector<std::string>&`, which will give the parsing function
             the user passes in access to the CmdArg's `values` member
         3. The second parameter to the function must be an output parameter, which will contain the parsed value
            if the parsing succeeds. Accessing the output parameter when parsing fails is undefined behavior.

@@ -12,6 +12,7 @@
 #include <stdexcept>
 
 #include "argument.hh"
+#include "program-info.hh"
 
 namespace carp
 {
@@ -21,8 +22,12 @@ namespace carp
             template <typename ...Args>
             Parser(Args...);
 
+            template <typename ...Args>
+            Parser(ProgramInfo, Args...);
+
             void parse(int, char*[]);
             void validate_required_args() const;
+            const bool arg_exists(std::string) const;
             const std::shared_ptr<CmdArg> get_arg(std::string) const;  //TODO: change to 'std::shared_ptr<const CmdArg>' (const in wrong spot)
             void help() const;
 
@@ -31,7 +36,9 @@ namespace carp
             #endif
 
         private:
+            ProgramInfo program_info;
             std::unordered_map<std::string, std::shared_ptr<CmdArg>> arguments;
+            std::unordered_map<std::string, std::shared_ptr<CmdArg>> argument_aliases;
     };
 
     template <typename ...Args>
@@ -39,34 +46,59 @@ namespace carp
     {
         static_assert((std::is_same_v<Args, std::shared_ptr<CmdArg>> and ...), "[CARP] Error: Parser constructor only accepts std::shared_ptr<carp::CmdArg> objects! Did you forget the '.build()' on the end of any CmdArgs?");
         (arguments.insert({args->identifier, args}), ...);
-        (arguments.insert({args->long_name, args}), ...);
-        (arguments.insert({args->short_name, args}), ...);
+        (argument_aliases.insert({args->long_name, args}), ...);
+        (argument_aliases.insert({args->short_name, args}), ...);
         
 
-        std::shared_ptr<carp::CmdArg> help = carp::CmdArg("help")
-                                                .abbreviation("h")
-                                                .help("displays this help screen")
-                                                .build();
+        std::shared_ptr<CmdArg> help = CmdArg("help")
+                                            .abbreviation("h")
+                                            .help("displays this help screen")
+                                            .build();
 
         arguments.insert({help->identifier, help});
-        arguments.insert({help->long_name, help});
-        arguments.insert({help->short_name, help});
+        argument_aliases.insert({help->long_name, help});
+        argument_aliases.insert({help->short_name, help});
+    }
+
+    template <typename ...Args>
+    Parser::Parser(ProgramInfo info, Args... args)
+    {
+        static_assert((std::is_same_v<Args, std::shared_ptr<CmdArg>> and ...), "[CARP] Error: Parser constructor only accepts std::shared_ptr<carp::CmdArg> objects! Did you forget the '.build()' on the end of any CmdArgs?");
+        
+        program_info = info;
+
+        (arguments.insert({args->identifier, args}), ...);
+        (argument_aliases.insert({args->long_name, args}), ...);
+        (argument_aliases.insert({args->short_name, args}), ...);
+        
+
+        std::shared_ptr<CmdArg> help = CmdArg("help")
+                                            .abbreviation("h")
+                                            .help("displays this help screen")
+                                            .build();
+
+        arguments.insert({help->identifier, help});
+        argument_aliases.insert({help->long_name, help});
+        argument_aliases.insert({help->short_name, help});
     }
 
     void Parser::parse(int argc, char* argv[])
     {
-        //NOTE: the simpler regex "^(-|--)[a-zA-Z-]+$" causes the corner case
-        // of '--' to be recognized as a valid commandline argument.
+        /*NOTE: the simpler regex "^(-|--)[a-zA-Z-]+$" causes the corner case
+        of '--' to be recognized as a valid commandline argument, which violates
+        POSIX Utility Syntax Guideline 10:*/
         const static std::regex arg_pattern(R"(^(-|--)[a-zA-Z]+[a-zA-Z-]*$)");
         std::shared_ptr<CmdArg> arg = nullptr;  
 
         for(int i=1; i < argc; ++i)
         {
             std::string cmdarg = argv[i];
+            if (std::regex_match(cmdarg, std::regex(R"(^(-|--)help$)")))
+                    help();
 
-            if (std::regex_match(cmdarg, arg_pattern) and arguments.find(cmdarg) != arguments.end())
+            if (std::regex_match(cmdarg, arg_pattern) and arg_exists(cmdarg))
             {
-                arg = arguments.at(cmdarg);
+                arg = get_arg(cmdarg);
                 arg->set = true;
 
                 switch (arg->on_parse)
@@ -113,17 +145,14 @@ namespace carp
     {
         std::string argument_errors;
 
-        for(const auto& [identifier, cmdarg] : arguments)
+        for(const auto& [_, cmdarg] : arguments)
         {
-            if (identifier[0] != '-')
+            if (cmdarg->enforced and not cmdarg->set)
             {
-                if (cmdarg->enforced and not cmdarg->set)
-                {
-                    if (not argument_errors.empty())
-                        argument_errors += ", ";
+                if (not argument_errors.empty())
+                    argument_errors += ", ";
 
-                    argument_errors += cmdarg->long_name + " (" + cmdarg->short_name + ")";
-                }
+                argument_errors += cmdarg->long_name + " (" + cmdarg->short_name + ")";
             }
         }
 
@@ -133,20 +162,26 @@ namespace carp
         }
     }
 
-    const std::shared_ptr<CmdArg> Parser::get_arg(std::string argname) const
+    const std::shared_ptr<CmdArg> Parser::get_arg(std::string name) const
     {
-        return arguments.at(argname);
+        if (arguments.find(name) != arguments.end())
+            return arguments.at(name);
+
+        return argument_aliases.at(name);
+    }
+
+    const bool Parser::arg_exists(std::string name) const
+    {
+        return arguments.find(name) != arguments.end() or argument_aliases.find(name) != argument_aliases.end();
     }
 
     void Parser::help() const
     {
+        program_info.details();
 
-        for(const auto& [name, cmdarg] : arguments)
+        for(const auto& [_, cmdarg] : arguments)
         {
-            if (name[0] != '-') //if a raw identifier, not a long/short_name
-            {
-                std::cout << cmdarg->summary() << '\n';
-            }
+            std::cout << cmdarg->summary() << '\n';
         }
         exit(1);
     }
@@ -155,17 +190,14 @@ namespace carp
         void Parser::print_all_arguments() const
         {
             std::cout << std::boolalpha;
-            for(const auto& [name, cmdarg] : arguments)
+            for(const auto& [_, cmdarg] : arguments)
             {
-                if (name[0] != '-') //if a raw identifier, not a long/short_name
-                {
-                    std::cout << "Identifier: " << cmdarg->identifier << '\n'
-                              << "Long name: " << cmdarg->long_name << '\n'
-                              << "Short name: " << cmdarg->short_name << '\n'
-                              << "Description: " << cmdarg->description << '\n'
-                              << "Required?: " << cmdarg->enforced << '\n'
-                              << "Set?: " << cmdarg->set << "\n\n";
-                }
+                std::cout << "Identifier: " << cmdarg->identifier << '\n'
+                            << "Long name: " << cmdarg->long_name << '\n'
+                            << "Short name: " << cmdarg->short_name << '\n'
+                            << "Description: " << cmdarg->description << '\n'
+                            << "Required?: " << cmdarg->enforced << '\n'
+                            << "Set?: " << cmdarg->set << "\n\n";
             }
         }
     #endif

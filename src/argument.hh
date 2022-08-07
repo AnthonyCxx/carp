@@ -83,7 +83,7 @@ namespace carp
         short_name = "-" + id;
         enforced = false;
         set = false;
-        on_pars = ArgAction::SetTrue;
+        on_parse = ArgAction::SetTrue;
         values = std::vector<std::string>(1);
         count = 0;
     }
@@ -114,7 +114,7 @@ namespace carp
 
     CmdArg& CmdArg::action(ArgAction action)
     {
-        on_pars = action;
+        on_parse = action;
         return *this;
     }
 

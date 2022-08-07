@@ -52,7 +52,6 @@ namespace tests {
             carp::Parser parser(
                 carp::CmdArg("foo")
                         .abbreviation("f")
-                        .required(true)
                         .help("description for arg foo")
                         .build(),
 
@@ -86,7 +85,6 @@ namespace tests {
             carp::Parser parser(
                 carp::CmdArg("foo")
                         .abbreviation("f")
-                        .required(true)
                         .help("description for arg foo")
                         .build(),
 
@@ -108,7 +106,6 @@ namespace tests {
             carp::Parser parser(
                 carp::CmdArg("foo")
                         .abbreviation("f")
-                        .required(true)
                         .help("description for arg foo")
                         .build(),
 
@@ -119,8 +116,8 @@ namespace tests {
             );
 
             parser.parse(argc, argv);
-            assert(parser.get_arg("foo")->set == true);
-            assert(parser.get_arg("bar")->set == true);
+            assert(parser.get_arg("foo")->set == true or parser.get_arg("--foo")->set == true);
+            assert(parser.get_arg("bar")->set == true or parser.get_arg("--bar")->set == true);
         }
 
         static void required_argument()
@@ -142,12 +139,15 @@ namespace tests {
             char* argv[] { "program_name" };
             int argc = 1;
 
+            //                                                 parser.parse(argc, argv);
             assert(member_throws_exception<std::runtime_error>(parser, &carp::Parser::parse, argc, argv));
         }
 
         static void help()
         {
             carp::Parser parser(
+                carp::ProgramInfo("Ethan Cox", "1.0", "C.A.R.P", "A POSIX-compliant commandline argument parser", "MIT"),
+
                 carp::CmdArg("foo")
                         .abbreviation("f")
                         .required(true)
@@ -414,7 +414,7 @@ namespace tests {
             test(__FILE__, stringify(parse_bool), parse_bool);
             test(__FILE__, stringify(parse_user_defined), parse_user_defined);
             
-            //test(__FILE__, stringify(help), help);
+            test(__FILE__, stringify(help), help);
             std::cout << '\n';
         }
     };
